@@ -1,6 +1,7 @@
 package com.mapbox.services.android.navigation.v5.location;
 
 import android.location.Location;
+import android.support.annotation.NonNull;
 
 import com.mapbox.geojson.Point;
 import com.mapbox.turf.TurfConstants;
@@ -36,7 +37,7 @@ public class LocationValidator {
   private LocationValidator() {
   }
 
-  public boolean isValidUpdate(Location location) {
+  public boolean isValidUpdate(@NonNull Location location) {
     // First update
     if (lastValidLocation == null) {
       lastValidLocation = location;
