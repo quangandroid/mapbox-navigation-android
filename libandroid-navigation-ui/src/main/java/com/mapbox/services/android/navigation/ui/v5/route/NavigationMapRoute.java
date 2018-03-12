@@ -347,8 +347,8 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private static FeatureCollection waypointFeatureCollection(DirectionsRoute route) {
     final List<Feature> waypointFeatures = new ArrayList<>();
     for (RouteLeg leg : route.legs()) {
-      waypointFeatures.add(getPointFromLineString(route, 0));
-      waypointFeatures.add(getPointFromLineString(route, leg.steps().size() - 1));
+      waypointFeatures.add(getPointFromLineString(leg, 0));
+      waypointFeatures.add(getPointFromLineString(leg, leg.steps().size() - 1));
     }
     return FeatureCollection.fromFeatures(waypointFeatures);
   }
@@ -576,10 +576,11 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
     }
   }
 
-  private static Feature getPointFromLineString(DirectionsRoute route, int index) {
-    List<Point> coordinates = route.routeOptions().coordinates();
-    Point waypoint = coordinates.get(index);
-    Feature feature = Feature.fromGeometry(waypoint);
+  private static Feature getPointFromLineString(RouteLeg leg, int index) {
+    Feature feature = Feature.fromGeometry(Point.fromLngLat(
+      leg.steps().get(index).maneuver().location().longitude(),
+      leg.steps().get(index).maneuver().location().latitude()
+    ));
     feature.addStringProperty(SOURCE_KEY, WAYPOINT_SOURCE_ID);
     feature.addStringProperty("waypoint",
       index == 0 ? "origin" : "destination"

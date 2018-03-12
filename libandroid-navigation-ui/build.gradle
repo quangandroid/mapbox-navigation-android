@@ -53,7 +53,6 @@ dependencies {
 
   // Mapbox plugins
   implementation(dependenciesList.locationLayerPlugin) {
-    exclude module: 'mapbox-android-services'
     exclude module: 'mapbox-android-sdk'
   }
 

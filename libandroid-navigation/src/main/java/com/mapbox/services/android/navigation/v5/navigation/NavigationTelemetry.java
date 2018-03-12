@@ -6,6 +6,10 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.support.annotation.NonNull;
 
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEngineListener;
+import com.mapbox.android.telemetry.Event;
+import com.mapbox.android.telemetry.MapboxTelemetry;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.core.constants.Constants;
 import com.mapbox.core.utils.TextUtils;
@@ -24,12 +28,6 @@ import com.mapbox.services.android.navigation.v5.routeprogress.RouteProgress;
 import com.mapbox.services.android.navigation.v5.utils.RingBuffer;
 import com.mapbox.services.android.navigation.v5.utils.RouteUtils;
 import com.mapbox.services.android.navigation.v5.utils.time.TimeUtils;
-import com.mapbox.services.android.telemetry.MapboxEvent;
-import com.mapbox.services.android.telemetry.MapboxTelemetry;
-import com.mapbox.services.android.telemetry.constants.TelemetryConstants;
-import com.mapbox.services.android.telemetry.location.LocationEngine;
-import com.mapbox.services.android.telemetry.location.LocationEngineListener;
-import com.mapbox.services.android.telemetry.utils.TelemetryUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,9 +37,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import static com.mapbox.services.android.navigation.v5.navigation.TelemetryUtils
+  .MAPBOX_SHARED_PREFERENCE_KEY_VENDOR_ID;
+
 class NavigationTelemetry implements LocationEngineListener, NavigationMetricListeners.EventListeners,
   NavigationMetricListeners.ArrivalListener {
 
+  // TODO Where are we going to create MapboxTelemetry instance? Which class is going to hold it?
+  private MapboxTelemetry mapboxTelemetry;
   private static NavigationTelemetry instance;
   private boolean isInitialized = false;
 
@@ -142,23 +145,26 @@ class NavigationTelemetry implements LocationEngineListener, NavigationMetricLis
       updateLocationEngine(locationEngine);
 
       validateAccessToken(accessToken);
+      mapboxTelemetry = new MapboxTelemetry(context, accessToken, BuildConfig.MAPBOX_NAVIGATION_EVENTS_USER_AGENT);
+      NavigationMetricsWrapper.init(context, accessToken, BuildConfig.MAPBOX_NAVIGATION_EVENTS_USER_AGENT);
 
       MapboxNavigationOptions options = navigation.options();
       // Set sdkIdentifier based on if from UI or not
       String sdkIdentifier = updateSdkIdentifier(options);
       // Enable extra logging in debug mode
-      MapboxTelemetry.getInstance().setDebugLoggingEnabled(options.isDebugLoggingEnabled());
+      mapboxTelemetry.updateDebugLoggingEnabled(true);
 
+      // TODO This won't be necessary if MapboxTelemetry is already set up
       updateUserAgent(context, accessToken, sdkIdentifier);
 
       // Get the current vendorId
       vendorId = obtainVendorId(context);
 
       NavigationMetricsWrapper.sdkIdentifier = sdkIdentifier;
-      NavigationMetricsWrapper.turnstileEvent();
-      // TODO This should be removed when we figure out a solution in NavigationTelemetry
-      // Force pushing a TYPE_MAP_LOAD event to ensure that the Nav turnstile event is sent
-      MapboxTelemetry.getInstance().pushEvent(MapboxEvent.buildMapLoadEvent());
+      Event navTurnstileEvent = NavigationMetricsWrapper.turnstileEvent();
+      // TODO Check if we are sending two turnstile events (Maps and Nav) and if so, do we want to track them
+      // separately?
+      mapboxTelemetry.push(navTurnstileEvent);
 
       isInitialized = true;
     }
@@ -187,7 +193,10 @@ class NavigationTelemetry implements LocationEngineListener, NavigationMetricLis
   void startSession(DirectionsRoute directionsRoute) {
     if (!isConfigurationChange) {
       navigationSessionState = navigationSessionState.toBuilder()
-        .sessionIdentifier(TelemetryUtils.buildUUID())
+        // TODO Check if it would make sense to expose Events library TelemetryUtils#obtainUniversalUniqueIdentifier
+        // () method
+        // If so, remove TelemetryUtils#buildUuid()
+        .sessionIdentifier(TelemetryUtils.buildUuid())
         .originalDirectionRoute(directionsRoute)
         .originalRequestIdentifier(directionsRoute.routeOptions().requestUuid())
         .requestIdentifier(directionsRoute.routeOptions().requestUuid())
@@ -213,6 +222,7 @@ class NavigationTelemetry implements LocationEngineListener, NavigationMetricLis
         NavigationMetricsWrapper.cancelEvent(navigationSessionState, metricProgress, metricLocation.getLocation());
       }
       lifecycleMonitor = null;
+      NavigationMetricsWrapper.disable();
       isInitialized = false;
     }
   }
@@ -346,11 +356,12 @@ class NavigationTelemetry implements LocationEngineListener, NavigationMetricLis
     return sdkIdentifier;
   }
 
+  // TODO Check and remove if not necessary
   private void updateUserAgent(@NonNull Context context, @NonNull String accessToken, String sdkIdentifier) {
-    String userAgent = String.format("%s/%s", sdkIdentifier, BuildConfig.MAPBOX_NAVIGATION_VERSION_NAME);
-    MapboxTelemetry.getInstance().initialize(context, accessToken, userAgent, sdkIdentifier,
-      BuildConfig.MAPBOX_NAVIGATION_VERSION_NAME);
-    MapboxTelemetry.getInstance().newUserAgent(userAgent);
+    /* String userAgent = String.format("%s/%s", sdkIdentifier, BuildConfig.MAPBOX_NAVIGATION_VERSION_NAME); */
+    /* MapboxTelemetry.getInstance().initialize(context, accessToken, userAgent, sdkIdentifier, */
+    /* BuildConfig.MAPBOX_NAVIGATION_VERSION_NAME); */
+    /* MapboxTelemetry.getInstance().newUserAgent(userAgent); */
   }
 
   private void flushEventQueues() {
@@ -362,9 +373,11 @@ class NavigationTelemetry implements LocationEngineListener, NavigationMetricLis
     }
   }
 
+  // TODO Check if it would make sense to expose Events library TelemetryUtils#retrieveVendorId() method
+  // If so, remove TelemetryUtils#getSharedPreferences(Context)
   private String obtainVendorId(Context context) {
     SharedPreferences prefs = TelemetryUtils.getSharedPreferences(context.getApplicationContext());
-    return prefs.getString(TelemetryConstants.MAPBOX_SHARED_PREFERENCE_KEY_VENDOR_ID, "");
+    return prefs.getString(MAPBOX_SHARED_PREFERENCE_KEY_VENDOR_ID, "");
   }
 
   private void updateCurrentLocation(Location rawLocation) {

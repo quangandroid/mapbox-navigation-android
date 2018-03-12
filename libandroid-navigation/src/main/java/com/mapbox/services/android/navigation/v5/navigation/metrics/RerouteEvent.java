@@ -2,7 +2,7 @@ package com.mapbox.services.android.navigation.v5.navigation.metrics;
 
 import android.support.annotation.NonNull;
 
-import com.mapbox.services.android.telemetry.utils.TelemetryUtils;
+import com.mapbox.services.android.navigation.v5.navigation.TelemetryUtils;
 
 public class RerouteEvent implements TelemetryEvent {
 
@@ -14,7 +14,10 @@ public class RerouteEvent implements TelemetryEvent {
 
   public RerouteEvent(SessionState rerouteSessionState) {
     this.rerouteSessionState = rerouteSessionState;
-    this.eventId = TelemetryUtils.buildUUID();
+    // TODO Check if it would make sense to expose Events library TelemetryUtils#obtainUniversalUniqueIdentifier()
+    // method
+    // If so, remove TelemetryUtils#buildUuid()
+    this.eventId = TelemetryUtils.buildUuid();
   }
 
   @Override
