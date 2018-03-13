@@ -41,6 +41,11 @@ dependencies {
     exclude module: 'mapbox-android-telemetry'
   }
 
+  // TODO Remove after Events lib gets released
+  api('com.mapbox.mapboxsdk:mapbox-android-core:0.3.0-20180312.171143-7') {
+    force = true
+  }
+
   // Support libraries
   implementation dependenciesList.supportDesign
   implementation dependenciesList.supportRecyclerView
@@ -53,7 +58,6 @@ dependencies {
 
   // Mapbox plugins
   implementation(dependenciesList.locationLayerPlugin) {
-    exclude module: 'mapbox-android-services'
     exclude module: 'mapbox-android-sdk'
   }
 

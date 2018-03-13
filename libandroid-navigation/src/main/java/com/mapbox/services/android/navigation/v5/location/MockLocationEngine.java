@@ -4,16 +4,14 @@ import android.location.Location;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
+import com.mapbox.core.constants.Constants;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
-
-import com.mapbox.services.android.telemetry.location.LocationEngine;
-import com.mapbox.services.android.telemetry.location.LocationEngineListener;
-import com.mapbox.core.constants.Constants;
 import com.mapbox.turf.TurfConstants;
 import com.mapbox.turf.TurfMeasurement;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -201,7 +199,7 @@ public class MockLocationEngine extends LocationEngine {
    * @since 2.2.0
    */
   private void sliceRoute(LineString lineString, double distance) {
-    double distanceKm = TurfMeasurement.lineDistance(lineString, TurfConstants.UNIT_KILOMETERS);
+    double distanceKm = TurfMeasurement.length(lineString, TurfConstants.UNIT_KILOMETERS);
     Timber.d("Route distance in km: %f", distanceKm);
     if (distanceKm <= 0) {
       return;

@@ -10,7 +10,7 @@ import com.mapbox.geojson.Point;
 import com.mapbox.services.android.navigation.v5.routeprogress.RouteLegProgress;
 import com.mapbox.services.android.navigation.v5.routeprogress.RouteProgress;
 import com.mapbox.services.android.navigation.v5.routeprogress.RouteStepProgress;
-import com.mapbox.services.android.telemetry.utils.MathUtils;
+import com.mapbox.services.android.navigation.v5.utils.MathUtils;
 import com.mapbox.turf.TurfConstants;
 import com.mapbox.turf.TurfMeasurement;
 import com.mapbox.turf.TurfMisc;
@@ -53,7 +53,7 @@ public class SnapToRoute extends Snap {
     // Uses Turf's pointOnLine, which takes a Point and a LineString to calculate the closest
     // Point on the LineString.
     if (stepCoordinates.size() > 1) {
-      Feature feature = TurfMisc.pointOnLine(locationToPoint, stepCoordinates);
+      Feature feature = TurfMisc.nearestPointOnLine(locationToPoint, stepCoordinates);
       Point point = ((Point) feature.geometry());
       snappedLocation.setLongitude(point.longitude());
       snappedLocation.setLatitude(point.latitude());

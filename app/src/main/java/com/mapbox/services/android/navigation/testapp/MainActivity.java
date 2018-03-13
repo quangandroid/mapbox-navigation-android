@@ -13,13 +13,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mapbox.android.core.permissions.PermissionsListener;
+import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.services.android.navigation.testapp.activity.MockNavigationActivity;
 import com.mapbox.services.android.navigation.testapp.activity.RerouteActivity;
+import com.mapbox.services.android.navigation.testapp.activity.WaypointNavigationActivity;
 import com.mapbox.services.android.navigation.testapp.activity.navigationui.NavigationMapRouteActivity;
 import com.mapbox.services.android.navigation.testapp.activity.navigationui.NavigationViewActivity;
-import com.mapbox.services.android.navigation.testapp.activity.WaypointNavigationActivity;
-import com.mapbox.services.android.telemetry.permissions.PermissionsListener;
-import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +27,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements PermissionsListener {
 
+  // TODO Check and remove if not necessary
   private static final String[] PERMISSIONS = {Manifest.permission.ACCESS_FINE_LOCATION,
     Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_NETWORK_STATE};
 
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements PermissionsListen
     permissionsManager = new PermissionsManager(this);
     if (!PermissionsManager.areLocationPermissionsGranted(this)) {
       recyclerView.setEnabled(false);
-      permissionsManager.requestPermissions(this, PERMISSIONS);
+      permissionsManager.requestLocationPermissions(this);
     }
   }
 

@@ -42,11 +42,14 @@ android {
 }
 
 dependencies {
-  // Mapbox Android Services
-  api dependenciesList.mapboxServices
-
+  api dependenciesList.mapboxEvents
   api dependenciesList.mapboxSdkServices
   api dependenciesList.mapboxSdkTurf
+
+  // TODO Remove after Events lib gets released
+  api('com.mapbox.mapboxsdk:mapbox-android-core:0.3.0-20180312.171143-7') {
+    force = true
+  }
 
   // Support
   implementation dependenciesList.supportAppcompatV7

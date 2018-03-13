@@ -9,6 +9,9 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEnginePriority;
+import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.services.android.navigation.v5.milestone.BannerInstructionMilestone;
 import com.mapbox.services.android.navigation.v5.milestone.Milestone;
@@ -27,9 +30,6 @@ import com.mapbox.services.android.navigation.v5.routeprogress.ProgressChangeLis
 import com.mapbox.services.android.navigation.v5.snap.Snap;
 import com.mapbox.services.android.navigation.v5.snap.SnapToRoute;
 import com.mapbox.services.android.navigation.v5.utils.ValidationUtils;
-import com.mapbox.services.android.telemetry.location.LocationEngine;
-import com.mapbox.services.android.telemetry.location.LocationEnginePriority;
-import com.mapbox.services.android.telemetry.location.LostLocationEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -188,7 +188,7 @@ public class MapboxNavigation implements ServiceConnection {
 
   private LocationEngine obtainLocationEngine() {
     if (locationEngine == null) {
-      return new LostLocationEngine(context);
+      return new LocationEngineProvider(context).obtainBestLocationEngineAvailable();
     }
 
     return locationEngine;
@@ -347,8 +347,9 @@ public class MapboxNavigation implements ServiceConnection {
    * Navigation uses a camera engine to determine the camera position while routing.
    * By default, it uses a {@link SimpleCamera}. If you would like to customize how the camera is
    * positioned, create a new {@link Camera} and set it here.
+   *
    * @param cameraEngine camera engine used to configure camera position while routing
-   * @since 0.8.0
+   * @since 0.10.0
    */
   public void setCameraEngine(@NonNull Camera cameraEngine) {
     this.cameraEngine = cameraEngine;
@@ -357,8 +358,9 @@ public class MapboxNavigation implements ServiceConnection {
   /**
    * Returns the current camera engine used to configure the camera position while routing. By default,
    * a {@link SimpleCamera} is used.
+   *
    * @return camera engine used to configure camera position while routing
-   * @since 0.8.0
+   * @since 0.10.0
    */
   public Camera getCameraEngine() {
     return cameraEngine;
@@ -427,6 +429,7 @@ public class MapboxNavigation implements ServiceConnection {
       navigationService.stopSelf();
       context.unbindService(this);
       isBound = false;
+      cameraEngine = null;
       navigationEventDispatcher.onNavigationEvent(false);
     }
   }

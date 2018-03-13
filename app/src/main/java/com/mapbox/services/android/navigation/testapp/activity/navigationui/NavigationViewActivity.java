@@ -1,24 +1,28 @@
 package com.mapbox.services.android.navigation.testapp.activity.navigationui;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.Toast;
 
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEngineListener;
+import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
+import com.mapbox.core.constants.Constants;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.Mapbox;
@@ -33,7 +37,6 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
-import com.mapbox.services.Constants;
 import com.mapbox.services.android.navigation.testapp.R;
 import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher;
 import com.mapbox.services.android.navigation.ui.v5.NavigationViewOptions;
@@ -41,13 +44,9 @@ import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.ui.v5.route.OnRouteSelectionChangeListener;
 import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigationOptions;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
-import com.mapbox.services.android.navigation.v5.utils.LocaleUtils;
-import com.mapbox.services.android.telemetry.location.LocationEngine;
-import com.mapbox.services.android.telemetry.location.LocationEngineListener;
-import com.mapbox.services.android.telemetry.location.LostLocationEngine;
+import com.mapbox.services.android.navigation.v5.navigation.NavigationUnitType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -59,7 +58,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import timber.log.Timber;
 
-import static com.mapbox.services.android.telemetry.location.LocationEnginePriority.HIGH_ACCURACY;
+import static com.mapbox.android.core.location.LocationEnginePriority.HIGH_ACCURACY;
 
 public class NavigationViewActivity extends AppCompatActivity implements OnMapReadyCallback,
   MapboxMap.OnMapLongClickListener, LocationEngineListener, Callback<DirectionsResponse>,
@@ -78,10 +77,6 @@ public class NavigationViewActivity extends AppCompatActivity implements OnMapRe
   Button launchRouteBtn;
   @BindView(R.id.loading)
   ProgressBar loading;
-  @BindView(R.id.demoSwitch)
-  Switch demoSwitch;
-  @BindView(R.id.languageSpinner)
-  Spinner spinner;
 
   private Marker currentMarker;
   private Point currentLocation;
@@ -89,10 +84,6 @@ public class NavigationViewActivity extends AppCompatActivity implements OnMapRe
   private DirectionsRoute route;
 
   private boolean locationFound;
-  private boolean shouldSimulateRoute;
-  private final List<Locale> locales = new ArrayList<>(
-    Arrays.asList(Locale.ENGLISH, Locale.FRENCH, Locale.GERMAN));
-  private Locale locale;
 
   @Override
   protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -101,29 +92,29 @@ public class NavigationViewActivity extends AppCompatActivity implements OnMapRe
     ButterKnife.bind(this);
     mapView.onCreate(savedInstanceState);
     mapView.getMapAsync(this);
-    demoSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-        shouldSimulateRoute = checked;
-      }
-    });
-    ArrayAdapter adapter = ArrayAdapter.createFromResource(this,
-      R.array.languages_array, android.R.layout.simple_spinner_dropdown_item);
-    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    spinner.setAdapter(adapter);
+  }
 
-    spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-      @Override
-      public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-        locale = locales.get(position);
-      }
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    // Inflate the menu; this adds items to the action bar if it is present.
+    getMenuInflater().inflate(R.menu.navigation_view_activity_menu, menu);
+    return true;
+  }
 
-      @Override
-      public void onNothingSelected(AdapterView<?> adapterView) {
-      }
-    });
-    locale = LocaleUtils.getDeviceLocale(this);
-    spinner.setSelection(locales.indexOf(locale));
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+      case R.id.settings:
+        showSettings();
+        break;
+      default:
+        break;
+    }
+    return true;
+  }
+
+  private void showSettings() {
+    startActivity(new Intent(this, NavigationViewSettingsActivity.class));
   }
 
   @SuppressWarnings( {"MissingPermission"})
@@ -253,7 +244,7 @@ public class NavigationViewActivity extends AppCompatActivity implements OnMapRe
 
   @SuppressWarnings( {"MissingPermission"})
   private void initLocationEngine() {
-    locationEngine = new LostLocationEngine(this);
+    locationEngine = new LocationEngineProvider(this).obtainBestLocationEngineAvailable();
     locationEngine.setPriority(HIGH_ACCURACY);
     locationEngine.setInterval(0);
     locationEngine.setFastestInterval(1000);
@@ -279,21 +270,49 @@ public class NavigationViewActivity extends AppCompatActivity implements OnMapRe
   }
 
   private void fetchRoute() {
-    NavigationRoute.builder()
+    NavigationRoute.Builder builder = NavigationRoute.builder()
       .accessToken(Mapbox.getAccessToken())
-      .language(locale)
       .origin(currentLocation)
       .destination(destination)
-      .alternatives(true)
-      .build()
+      .alternatives(true);
+    setFieldsFromSharedPreferences(builder);
+    builder.build()
       .getRoute(this);
     loading.setVisibility(View.VISIBLE);
   }
 
+  private void setFieldsFromSharedPreferences(NavigationRoute.Builder builder) {
+    builder
+      .language(getLocale())
+      .voiceUnits(NavigationUnitType.getDirectionsCriteriaUnitType(getUnitType()));
+  }
+
+  private Locale getLocale() {
+    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return new Locale(sharedPreferences.getString("language", ""));
+  }
+
+  private int getUnitType() {
+    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return Integer.parseInt(sharedPreferences.getString("unit_type", "0"));
+  }
+
+  private boolean getShouldSimulateRoute() {
+    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return sharedPreferences.getBoolean("simulate_route", false);
+  }
+
   private void launchNavigationWithRoute() {
+    Locale locale = getLocale();
+    MapboxNavigationOptions navigationOptions =
+      MapboxNavigationOptions.builder()
+        .locale(locale)
+        .unitType(getUnitType())
+        .build();
+
     NavigationViewOptions.Builder optionsBuilder = NavigationViewOptions.builder()
-      .shouldSimulateRoute(shouldSimulateRoute)
-      .navigationOptions(MapboxNavigationOptions.builder().locale(locale).build());
+      .shouldSimulateRoute(getShouldSimulateRoute())
+      .navigationOptions(navigationOptions);
     if (route != null) {
       if (route.routeOptions().language().equals(locale.getLanguage())) {
         optionsBuilder.directionsRoute(route);

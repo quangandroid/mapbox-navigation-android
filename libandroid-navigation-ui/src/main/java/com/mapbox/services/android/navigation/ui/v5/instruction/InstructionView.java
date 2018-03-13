@@ -132,6 +132,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
     bind();
     initBackground();
     initTurnLaneRecyclerView();
+    initDirectionsRecyclerView();
     initAnimations();
   }
 
@@ -156,7 +157,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    * Subscribes to a {@link NavigationViewModel} for
    * updates from {@link android.arch.lifecycle.LiveData}.
    * <p>
-   * Updates all views with fresh data / shows & hides re-route state.
+   * Updates all views with fresh data / shows &amp; hides re-route state.
    *
    * @param navigationViewModel to which this View is subscribing
    * @since 0.6.2
@@ -198,7 +199,6 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
 
     // ViewModel set - click listeners can be set now
     initClickListeners();
-    initDirectionsRecyclerView();
   }
 
   /**
@@ -685,8 +685,10 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
     double durationRemaining = model.getProgress().currentLegProgress().currentStepProgress().durationRemaining();
 
     if (shouldShowTurnLanes(turnLanes, maneuverViewModifier, durationRemaining)) {
-      turnLaneAdapter.addTurnLanes(turnLanes, maneuverViewModifier);
-      showTurnLanes();
+      if (turnLaneLayout.getVisibility() == GONE) {
+        turnLaneAdapter.addTurnLanes(turnLanes, maneuverViewModifier);
+        showTurnLanes();
+      }
     } else {
       hideTurnLanes();
     }

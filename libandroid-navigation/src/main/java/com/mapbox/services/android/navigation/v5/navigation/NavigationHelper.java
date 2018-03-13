@@ -12,10 +12,11 @@ import com.mapbox.geojson.Point;
 import com.mapbox.services.android.navigation.v5.milestone.Milestone;
 import com.mapbox.services.android.navigation.v5.offroute.OffRoute;
 import com.mapbox.services.android.navigation.v5.offroute.OffRouteCallback;
+import com.mapbox.services.android.navigation.v5.offroute.OffRouteDetector;
 import com.mapbox.services.android.navigation.v5.route.FasterRoute;
 import com.mapbox.services.android.navigation.v5.routeprogress.RouteProgress;
 import com.mapbox.services.android.navigation.v5.snap.Snap;
-import com.mapbox.services.android.telemetry.utils.MathUtils;
+import com.mapbox.services.android.navigation.v5.utils.MathUtils;
 import com.mapbox.turf.TurfConstants;
 import com.mapbox.turf.TurfMeasurement;
 import com.mapbox.turf.TurfMisc;
@@ -47,7 +48,7 @@ class NavigationHelper {
 
     // Uses Turf's pointOnLine, which takes a Point and a LineString to calculate the closest
     // Point on the LineString.
-    Feature feature = TurfMisc.pointOnLine(locationToPoint, coordinates);
+    Feature feature = TurfMisc.nearestPointOnLine(locationToPoint, coordinates);
     return ((Point) feature.geometry());
   }
 
@@ -80,7 +81,7 @@ class NavigationHelper {
       return 0;
     }
     LineString slicedLine = TurfMisc.lineSlice(snappedPosition, nextManeuverPosition, lineString);
-    return TurfMeasurement.lineDistance(slicedLine, TurfConstants.UNIT_METERS);
+    return TurfMeasurement.length(slicedLine, TurfConstants.UNIT_METERS);
   }
 
   /**
@@ -197,9 +198,11 @@ class NavigationHelper {
 
   static boolean isUserOffRoute(NewLocationModel newLocationModel, RouteProgress routeProgress,
                                 OffRouteCallback callback) {
+    MapboxNavigationOptions options = newLocationModel.mapboxNavigation().options();
+    Location location = newLocationModel.location();
     OffRoute offRoute = newLocationModel.mapboxNavigation().getOffRouteEngine();
-    return offRoute.isUserOffRoute(newLocationModel.location(), routeProgress,
-      newLocationModel.mapboxNavigation().options(), newLocationModel.distancesAwayFromManeuver(), callback);
+    setOffRouteDetectorCallback(offRoute, callback);
+    return offRoute.isUserOffRoute(location, routeProgress, options);
   }
 
   static boolean shouldCheckFasterRoute(NewLocationModel newLocationModel, RouteProgress routeProgress) {
@@ -223,5 +226,11 @@ class NavigationHelper {
       return steps.get(stepIndex + 1).maneuver().location();
     }
     return !coords.isEmpty() ? coords.get(coords.size() - 1) : coords.get(coords.size());
+  }
+
+  private static void setOffRouteDetectorCallback(OffRoute offRoute, OffRouteCallback callback) {
+    if (offRoute instanceof OffRouteDetector) {
+      ((OffRouteDetector) offRoute).setOffRouteCallback(callback);
+    }
   }
 }
