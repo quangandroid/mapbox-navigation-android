@@ -16,6 +16,7 @@ import com.mapbox.services.android.navigation.v5.utils.RouteUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import timber.log.Timber;
 
@@ -23,7 +24,7 @@ class NavigationEventDispatcher {
 
   private List<NavigationEventListener> navigationEventListeners;
   private List<MilestoneEventListener> milestoneEventListeners;
-  private List<ProgressChangeListener> progressChangeListeners;
+  private CopyOnWriteArrayList<ProgressChangeListener> progressChangeListeners;
   private List<OffRouteListener> offRouteListeners;
   private List<FasterRouteListener> fasterRouteListeners;
   private NavigationMetricListeners.EventListeners metricEventListeners;
@@ -32,7 +33,7 @@ class NavigationEventDispatcher {
   NavigationEventDispatcher() {
     navigationEventListeners = new ArrayList<>();
     milestoneEventListeners = new ArrayList<>();
-    progressChangeListeners = new ArrayList<>();
+    progressChangeListeners = new CopyOnWriteArrayList<>();
     offRouteListeners = new ArrayList<>();
     fasterRouteListeners = new ArrayList<>();
   }
