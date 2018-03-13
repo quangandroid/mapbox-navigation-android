@@ -49,6 +49,11 @@ dependencies {
   implementation dependenciesList.mapboxMapSdk
   implementation dependenciesList.locationLayerPlugin
 
+  // TODO Remove after Events lib gets released
+  implementation('com.mapbox.mapboxsdk:mapbox-android-core:0.3.0-20180312.171143-7') {
+    force = true
+  }
+
   // Support libraries
   implementation dependenciesList.supportAppcompatV7
   implementation dependenciesList.supportDesign
