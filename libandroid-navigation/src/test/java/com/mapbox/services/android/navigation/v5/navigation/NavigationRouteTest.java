@@ -82,6 +82,7 @@ public class NavigationRouteTest extends BaseTest {
       .coordinates(coordinates)
       .voiceUnits(DirectionsCriteria.METRIC)
       .user("example_user")
+      .baseUrl("/route")
       .build();
 
     NavigationRoute navigationRoute = NavigationRoute.builder()

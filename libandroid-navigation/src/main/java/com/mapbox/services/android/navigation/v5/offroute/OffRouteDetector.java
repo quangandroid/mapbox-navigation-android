@@ -15,7 +15,8 @@ import com.mapbox.turf.TurfMisc;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.mapbox.services.android.navigation.v5.navigation.NavigationConstants.MINIMUM_BACKUP_DISTANCE_FOR_OFF_ROUTE;
+import static com.mapbox.services.android.navigation.v5.navigation.NavigationConstants
+  .MINIMUM_BACKUP_DISTANCE_FOR_OFF_ROUTE;
 import static com.mapbox.services.android.navigation.v5.utils.MeasurementUtils.userTrueDistanceFromStep;
 import static com.mapbox.services.android.navigation.v5.utils.ToleranceUtils.dynamicRerouteDistanceTolerance;
 
@@ -221,14 +222,14 @@ public class OffRouteDetector extends OffRoute {
 
     LineString stepLineString = LineString.fromLngLats(stepPoints);
     Point maneuverPoint = stepPoints.get(stepPoints.size() - 1);
-    Point userPointOnStep = (Point) TurfMisc.pointOnLine(currentPoint, stepPoints).geometry();
+    Point userPointOnStep = (Point) TurfMisc.nearestPointOnLine(currentPoint, stepPoints).geometry();
 
     if (userPointOnStep == null || maneuverPoint.equals(userPointOnStep)) {
       return false;
     }
 
     LineString remainingStepLineString = TurfMisc.lineSlice(userPointOnStep, maneuverPoint, stepLineString);
-    double userDistanceToManeuver = TurfMeasurement.lineDistance(remainingStepLineString, TurfConstants.UNIT_METERS);
+    double userDistanceToManeuver = TurfMeasurement.length(remainingStepLineString, TurfConstants.UNIT_METERS);
 
     boolean hasDistances = !distancesAwayFromManeuver.isEmpty();
     boolean validOffRouteDistanceTraveled = hasDistances && distancesAwayFromManeuver.peekLast()

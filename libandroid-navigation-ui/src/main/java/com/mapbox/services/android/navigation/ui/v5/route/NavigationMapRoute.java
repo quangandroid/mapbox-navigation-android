@@ -23,7 +23,6 @@ import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.LineLayer;
 import com.mapbox.mapboxsdk.style.layers.Property;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static com.mapbox.mapboxsdk.style.expressions.Expression.color;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
@@ -410,7 +410,7 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
       PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
       PropertyFactory.lineWidth(interpolate(
-        Expression.exponential(1.5f), zoom(),
+        exponential(1.5f), zoom(),
         stop(4f, 3f * scale),
         stop(10f, 4f * scale),
         stop(13f, 6f * scale),
@@ -459,7 +459,7 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
       PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
       PropertyFactory.lineWidth(interpolate(
-        Expression.exponential(1.5f), zoom(),
+        exponential(1.5f), zoom(),
         stop(10f, 7f),
         stop(14f, 10.5f * scale),
         stop(16.5f, 15.5f * scale),
@@ -551,12 +551,13 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
       waypointLayer = new SymbolLayer(WAYPOINT_LAYER_ID, WAYPOINT_SOURCE_ID).withProperties(
         PropertyFactory.iconImage(match(
           get("waypoint"),
-          literal("originMarker"), literal("stop"), literal("originMarker"),
-          literal("destination"), literal("destinationMarker")
+          literal("originMarker"), literal("originMarker"),
+          literal("destination"), literal("destinationMarker"),
+          literal("defaultOutputIfAboveDoesntMatch")
           )
         ),
         PropertyFactory.iconSize(interpolate(
-          Expression.exponential(1.5f), zoom(),
+          exponential(1.5f), zoom(),
           stop(22f, 2.8f),
           stop(12f, 1.3f),
           stop(10f, 0.8f),
@@ -655,7 +656,7 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
 
   private Point findPointOnLine(Point clickPoint, LineString lineString) {
     List<Point> linePoints = lineString.coordinates();
-    Feature feature = TurfMisc.pointOnLine(clickPoint, linePoints);
+    Feature feature = TurfMisc.nearestPointOnLine(clickPoint, linePoints);
     return (Point) feature.geometry();
   }
 
