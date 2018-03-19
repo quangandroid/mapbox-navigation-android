@@ -188,7 +188,7 @@ public class RouteViewModel extends AndroidViewModel implements Callback<Directi
   }
 
   private void addNavigationViewOptions(NavigationRoute.Builder builder) {
-    if (routeProfile != null) {
+    if (!TextUtils.isEmpty(routeProfile)) {
       builder.profile(routeProfile);
     }
     builder
